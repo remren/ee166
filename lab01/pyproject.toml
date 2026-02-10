@@ -1,0 +1,8 @@
+[project]
+name = "lab01"
+authors = [
+  {name = "Remy Ren", email = "remy.ren@tufts.edu"},
+]
+
+description = "ee166 lab01, 63-tap FIR filter in SystemVerilog with Python verification"
+
