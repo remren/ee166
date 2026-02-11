@@ -21,7 +21,7 @@ print(x.bin())
 
 # Result of this value (5.07397461)_{10} should be (0101000100101111)_2
 lec_test_num = Fxp(5.07397461, signed=True, n_word=16, n_frac=12, n_int=3)
-print(f"Lecture Number Test: {lec_test_num.bin() == "0101000100101111"}") # Taken from slides, so this should agree.
+print(f"Lecture Number Test: {lec_test_num.bin() == 0b0101000100101111}") # Taken from slides, so this should agree.
 
 # TODO: UNDERSTAND HOW FIXED POINT NUMBER WORKS (convert back and forth easily in head)
 
