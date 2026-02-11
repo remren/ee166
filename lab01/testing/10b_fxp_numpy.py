@@ -36,7 +36,7 @@ def fxp_dec(n_frac, fxp):
 assert fxp_dec(7, pos_b_result) == pos_d_result, "Failed: fxp_dec positive"
 assert fxp_dec(7, -1*pos_b_result) == -1*pos_d_result, "Failed: fxp_dec negative"
 
-# Checking filter conversion
+## Checking filter conversion
 import fir_TAP63_10b, fir_TAP63
 
 print(fir_TAP63.filt_coeff)
@@ -62,7 +62,7 @@ for i, c in enumerate(np.round(np.array(filtc_dec*2**9))):
    if filtc_fxp[i] != c:
       print(f"i:{i}, fxp:{filtc_fxp[i]}, c:{c}, diff:{filtc_fxp[i]-c}")
 
-print("check convert from fxp to dec vs. fxp")
+print("check convert from fxp to dec vs. dec")
 for i, c in enumerate(np.round(np.array(filtc_dec*2**9))):
    if filtc_fxp[i] != c:
       print(f"i:{i}, fxp:{filtc_fxp[i]}, c:{c}, diff:{filtc_fxp[i]-c}")
