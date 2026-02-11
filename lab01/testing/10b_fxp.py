@@ -1,8 +1,12 @@
+## DISCOVERY: to save myself from going bald, use numpy...
+## unsigned is not supported in python... so handling bit level data
+## at my own specification is not possible without dependencies
+import numpy as np
+
 ## Decimal to Fxp (10-bit, 1 signed, 2 int, 7 frac)
 # lets say 1 + 0.5 = 1.5
 d_result = 1.5
 b_result = 0b0011000000
-
 # The number we work with is 10-bit fxp.
 # The decimal result is that 10-bit fxp -> scaled by 2^(-n_frac)
 # Thus, for decimal to fxp, it's decimal scaled by 2^(n_frac)
@@ -27,7 +31,7 @@ print(f"b_scaled={b_scaled}")
 assert b_scaled == d_result, "Failed check fxp to dec for 1.5"
 
 ## Signed
-neg_d_result = -1.5
+neg_d_result = np.uint10(-1.5)
 neg_b_result = 0b1011000000
 
 neg_d_scaled = int(neg_d_result * int(2**7))
@@ -43,7 +47,14 @@ neg_b_scaled = neg_b_result * 2**(-7)
 print(f"neg_b_scaled={neg_b_scaled}")
 # print(f"negative check fxp to dec for 1.5: {neg_b_scaled == neg_d_result}")
 
-
+# def check_dec_fxp(dec, fxp, n_int, n_frac):
+#    val = dec
+#    signed_bit_mask = 0
+#    if val < 0:
+#       val = abs(val)
+#       signed_bit = 1
+#    val_scaled = int(val * (2**n_frac))
+   
 ## ------------------------------------------------------------
 ## DONE WITH THIS EXAMPLE.
 ## Example from slides: 5.07397461 in dec = 0b0101000100101111

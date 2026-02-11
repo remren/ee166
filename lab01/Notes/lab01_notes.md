@@ -14,10 +14,18 @@ Therefore, it is only possible to have a maximum amp. of 2.
 [TODO]
 #1 Implement filter in python (MATPLOTLIB) [DONE]
    - exploring verification with FXP, also how scaling works with fxp (im dumb)
+   - realizing im probably the problem, trying to force an interpretation onto python's systems.
+      - solution: work in numpy. has unsigned and signed. therefore, even though we want 10-bit words, work in 16-bit words (numpy only supports standard word sizes)
+         - deal with it using sign extension
 #2 implement in verilog
-    - implement convolution
-        - implement MAC
-        - implement conv
+   - implement convolution
+      - implement MAC
+      - implement conv
+   - filter coefficients: either get 10-bit fxp from site, or just scale.
 #3 compare TB results to Python
+   - data coming out of TB will be (?) 10-bit Fxp
+   - data in python is decimal
+   - want to compare Fxp to Fxp or decimal to decimal
+   - in the end, decimal-to-decimal easier for graph.
 
 FIR -> group delay
