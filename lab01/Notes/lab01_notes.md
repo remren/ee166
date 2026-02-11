@@ -12,7 +12,8 @@ Therefore, it is only possible to have a maximum amp. of 2.
     - other way around from fxp to decimal -> 2s comp -> 2^(-number of fractional bits)
     
 [TODO]
-#1 Implement filter in python (MATPLOTLIB)
+#1 Implement filter in python (MATPLOTLIB) [DONE]
+   - exploring verification with FXP, also how scaling works with fxp (im dumb)
 #2 implement in verilog
     - implement convolution
         - implement MAC
