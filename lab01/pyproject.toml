@@ -10,5 +10,6 @@ dependencies = [
   "PyQt6",
   "matplotlib",
   "numpy",
-  "fxpmath"
+  "fxpmath",
+  "scipy"
 ]

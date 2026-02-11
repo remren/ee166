@@ -1,6 +1,7 @@
 import matplotlib
 from matplotlib import pyplot as plt
 import numpy as np
+from scipy import signal
 
 import fir_TAP63
 
@@ -23,11 +24,25 @@ s_rate = 2000 # Hz, sampling rate set by lab instructions
 x_400, tn_400 = create_sin(1, 400, 0, s_rate, t_total)
 x_500, tn_500 = create_sin(1, 500, 0, s_rate, t_total)
 
-y = x_400 + x_500
+# Combined sinusoid input data
+x_comb = x_400 + x_500
 
-plt.plot(tn_400, x_400, lw="1", color="green", marker='.')
-plt.plot(tn_500, x_500, lw="1", color="blue", marker='.')
-plt.plot(tn_500, y, lw="1", color="red", marker='.')
+# "Ideal" convolution using lfilter from SciPy
+b_fir = fir_TAP63.filt_coeff
+y = signal.lfilter(b_fir, 1, x_comb)
 
-plt.grid(True)
-plt.show()
+freq_grpdelay_fir, grpdelay_fir = signal.group_delay([b_fir, 1], fs=s_rate)
+print(grpdelay_fir)
+
+## From EE125, recall...
+## An FIR filter of length 63 or has 63 TAPs aka 62nd-order
+## has a latency or group delay of order/2, so 62/2... however here,
+## For some reason, need to use a shift of 30 to perfectly align signals.
+## Could be due to off by 1 error?
+## SHOULD ASK PROF ABOUT THIS.
+print(len(b_fir))
+shifted, tn_shift = create_sin(1, 400, 30, s_rate, t_total)
+
+
+# plt.plot(tn_500, y)
+# plt.show()
