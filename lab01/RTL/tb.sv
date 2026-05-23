@@ -41,9 +41,9 @@ module tb;
         filter_en = 1;
 
         // Load filter coefficients
-        fp = $fopen({file_path, "RTL/filter_taps.txt"}, "r");
+        fp = $fopen({file_path, "RTL_filter_taps.csv"}, "r");
         if (fp == 0) begin
-            $display("Error: Could not open filter_taps.txt");
+            $display("Error: Could not open RTL_filter_taps.csv");
             $finish;
         end
 
@@ -58,15 +58,15 @@ module tb;
         $fclose(fp);
 
         // Process input data
-        fp = $fopen({file_path, "RTL/s400_500_input_signal.csv"}, "r");
+        fp = $fopen({file_path, "RTL_s400_500_input_signal.csv"}, "r");
         if (fp == 0) begin
-            $display("Error: Could not open combined.csv");
+            $display("Error: Could not open RTL_s400_500_input_signal.csv");
             $finish;
         end
         
-        fp2 = $fopen({file_path, "output.csv"}, "w");
+        fp2 = $fopen({file_path, "RTL_output.csv"}, "w");
         if (fp2 == 0) begin
-            $display("Error: Could not open output.csv");
+            $display("Error: Could not open RTL_output.csv");
             $finish;
         end
 

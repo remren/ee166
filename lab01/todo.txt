@@ -72,7 +72,7 @@ Notes 5/22 @ 9:32 PM
             - Sign: 1 bit, Integer Part: 0 bits, Fractional Part: 8 bits
         - My desired Fxp representation:
             - Sign: 1 bit, Integer Part: 2 bits, Fractional Part: 8 BITS.
-            
+                
     - THIS IS CORRECT NOW! Why?
         - Because converting floating to Fxp is: clip(round(float * 2^m))
         - And converting Fxp to floating is:     fxp / 2^m

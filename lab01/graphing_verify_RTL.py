@@ -3,16 +3,14 @@ from matplotlib import pyplot as plt
 import numpy as np
 import csv
 
-import fir_verification as data
-import fir_TAP63 
-
 import os
 
 # Parameters
+TAPS = 63
 SAVE_DIR = "./images"
-GRAPHING_TN = np.linspace(0, data.t_total, int(data.s_rate * data.t_total))
 FXP_FRAC = 8
-SCALE = 2 ** FXP_FRAC # for 10-bit, 1 signed bit, 1 integer bit, 8 fractional bits.
+FXP_INT  = 1
+SCALE = int(2 ** FXP_FRAC) # for 10-bit, 1 signed bit, 1 integer bit, 8 fractional bits.
 
 # Plotting Helpers
 def _save(fig, filename):
@@ -23,31 +21,32 @@ def _save(fig, filename):
     plt.close(fig)
     print(f"  Saved: {path}")
 
-def write_combined_to_csv(filename="combined.csv"):
+# Conversion Helpers
+
+def float_to_fxp(value):
+    values = np.asarray(value)
+    scaled = np.round(values * SCALE)
+    scaled = np.clip(scaled, -FXP_INT*SCALE, FXP_INT*SCALE-1)
+    return scaled.astype(int)
+
+def fxp_to_float(value):
+    values = np.asarray(value)
+    return values / SCALE
+
+# File Writing Helpers
+
+def write_array_to_csv(array, filename: str):
     """
-    Read s_comb from fir_verification data and write to CSV file.
+    Read an array writes its contents to an CSV file.
     Format: One integer value per line (scaled for 10-bit signed).
     """
-    s_comb = data.x_comb
-    
-    # Scale the floating point values to 10-bit signed integers (-512 to 511)
-    # Find max absolute value for scaling
-    max_abs = np.max(np.abs(s_comb))
-    if max_abs > 0:
-        scaled_data = np.round(s_comb / max_abs * 511).astype(int)
-    else:
-        scaled_data = np.zeros_like(s_comb, dtype=int)
-    
-    # Clamp to 10-bit signed range
-    scaled_data = np.clip(scaled_data, -512, 511)
-    
+
     with open(filename, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        for value in scaled_data:
+        for value in array:
             writer.writerow([value])
     
-    print(f"  Saved {len(scaled_data)} samples to {filename}")
-    return scaled_data
+    print(f"  Saved {len(array)} values to {filename}")
 
 def write_filter_taps_to_csv(filename="filter_taps.txt"):
     """
@@ -254,86 +253,129 @@ def graph_sin_comb_fxp(py_fxp, rtl_fxp):
 
     _save(figure, "result_conv_overlay_fxp.png")
 
+# *** Main Functions *** 
+# 1. Create CSV with combined sinusoids as input file for RTL testbench
+
 
 if __name__ == "__main__":
-    GRAPHING_TN = np.linspace(0, data.t_total, int(data.s_rate * data.t_total))
+    import fir_verification as signal_data
+
+    s_400 = signal_data.x_400
+    s_500 = signal_data.x_500
+    s_comb = signal_data.x_comb
+
+    # 0. TODO extend s_comb to a longer linspace
+    # 1. Create CSV with combined sinusoids as input file for RTL testbench
+    print("\n" + "=" * 60)
+    print("1. Create input data CSV for RTL")
+    print("=" * 60)
+    fxp_s_comb = float_to_fxp(s_comb)
+    write_array_to_csv(fxp_s_comb, "RTL_s400_500_input_signal.csv")
     
-    # Generate CSV files for SystemVerilog testbench
-    scaled_data = write_combined_to_csv("s400_500_input_signal.csv")
-    write_filter_taps_to_csv("filter_taps.txt")
+    # 2. Convert, check against TFilter, and write filter coefficients to CSV for RTL
+    print("\n" + "=" * 60)
+    print("2. Write filter coefficients to CSV for RTL")
+    print("=" * 60)
+    import TFilter_TAP63_double, TFilter_TAP63_fxp_Q1_8
+
+    tfilter_float_taps = TFilter_TAP63_double.filt_coeff
+    tfilter_q1_8_taps  = TFilter_TAP63_fxp_Q1_8.filt_coeff
+
+    fxp_taps   = float_to_fxp(tfilter_float_taps)
+    print(f"Correct Float to FXP for FIR Filter: {tfilter_q1_8_taps == fxp_taps}")
+
+    write_array_to_csv(fxp_s_comb, "RTL_filter_taps.csv")
+
+    # 3. TODO Graph and save s400 and s500, then combining in float
+
+    # 4. TODO Maybe? Convert float comb -> fxp -> back into float
+    #    graph the comparison, losses from conversion?
+
+    # X. group delay comparison all in float 
+    # 5. automate running the tb, input, run and compare?
+    # X. graph python vs. rtl
+    # X. take fxp_comparison from other, and obtain impulses
+    # X. compare and get error, rms
+
+
+
+    # X. Compare sinusoids
+
+
+    # write_filter_taps_to_csv("filter_taps.txt")
     
-    # Generate plots
-    graph_sin_all(data.x_400, data.x_500, data.x_comb, "s_400_500hz_modulated")
-    graph_sin_comb()
-    print("\nDone. All plots saved to images/")
+    # # Generate plots
+    # graph_sin_all(data.x_400, data.x_500, data.x_comb, "s_400_500hz_modulated")
+    # graph_sin_comb()
+    # print("\nDone. All plots saved to images/")
 
-    write_py_s400_output_to_csv(data.y)
+    # write_py_s400_output_to_csv(data.y)
 
-    y_fxp = [float_to_q9(v) for v in data.y]
-    y_fxp = np.asarray(y_fxp)
-    # print(y_fxp)
+    # y_fxp = [float_to_q9(v) for v in data.y]
+    # y_fxp = np.asarray(y_fxp)
+    # # print(y_fxp)
 
-    write_py_s400_output_to_csv(y_fxp, "s400_py_output_fxp.csv")
+    # write_py_s400_output_to_csv(y_fxp, "s400_py_output_fxp.csv")
 
-    rtl_fxp = []
-    fxp_filename = "output.csv"
-    with open(fxp_filename, 'r') as f:
-        for line in f:
-            sign = 1
-            line = line.strip()
-            # print(line[0][0])
-            if line[0][0] == '-':
-                sign = -1
-                # print('neg')
-                line = line[1:] # strip the negative so its detected as a numeric
-            if line.isnumeric():
-                integer_line = int(line)
-                value = sign * integer_line
-                # print(f"numeric:{line}, sign:{sign}")
-                rtl_fxp.append(value)
-            else:
-                rtl_fxp.append(0)
-    print(f"Read: {fxp_filename} as input data for rtl_fxp")
-    print(rtl_fxp)
+    # rtl_fxp = []
+    # fxp_filename = "output.csv"
+    # with open(fxp_filename, 'r') as f:
+    #     for line in f:
+    #         sign = 1
+    #         line = line.strip()
+    #         # print(line[0][0])
+    #         if line[0][0] == '-':
+    #             sign = -1
+    #             # print('neg')
+    #             line = line[1:] # strip the negative so its detected as a numeric
+    #         if line.isnumeric():
+    #             integer_line = int(line)
+    #             value = sign * integer_line
+    #             # print(f"numeric:{line}, sign:{sign}")
+    #             rtl_fxp.append(value)
+    #         else:
+    #             rtl_fxp.append(0)
+    # print(f"Read: {fxp_filename} as input data for rtl_fxp")
+    # print(rtl_fxp)
 
-    # graph_sin_comb_fxp(y_fxp, rtl_fxp)
+    # # graph_sin_comb_fxp(y_fxp, rtl_fxp)
 
-    shift = 2
-    rtl_fxp_shift = rtl_fxp[shift:]
-    for i in range(shift):
-        rtl_fxp_shift.append(0)
-    # rtl_fxp_shift = 2 * np.asarray(rtl_fxp_shift) # Test scaling to check if there's some weird conversion
-    graph_sin_comb_fxp(y_fxp, rtl_fxp_shift)
+    # shift = 2
+    # rtl_fxp_shift = rtl_fxp[shift:]
+    # for i in range(shift):
+    #     rtl_fxp_shift.append(0)
+    # # rtl_fxp_shift = 2 * np.asarray(rtl_fxp_shift) # Test scaling to check if there's some weird conversion
+    # graph_sin_comb_fxp(y_fxp, rtl_fxp_shift)
 
-    test_taps = [float_to_q9(v) for v in fir_TAP63.filt_coeff]
-    # print(test_taps)
-    write_py_s400_output_to_csv(test_taps, filename="test_taps.csv")
+    # test_taps = [float_to_q9(v) for v in fir_TAP63.filt_coeff]
+    # # print(test_taps)
+    # write_py_s400_output_to_csv(test_taps, filename="test_taps.csv")
 
-    random_taps = []
-    with open("random_taps.csv", 'r') as f:
-        for line in f:
-            sign = 1
-            line = line.strip()
-            # print(line[0][0])
-            if line[0][0] == '-':
-                sign = -1
-                # print('neg')
-                line = line[1:] # strip the negative so its detected as a numeric
-            if line.isnumeric():
-                integer_line = int(line)
-                value = sign * integer_line
-                # print(f"numeric:{line}, sign:{sign}")
-                random_taps.append(value)
-            else:
-                random_taps.append(0)
-    print(f"Read: random_taps.csv as input data for random_taps")
+    # random_taps = []
+    # with open("random_taps.csv", 'r') as f:
+    #     for line in f:
+    #         sign = 1
+    #         line = line.strip()
+    #         # print(line[0][0])
+    #         if line[0][0] == '-':
+    #             sign = -1
+    #             # print('neg')
+    #             line = line[1:] # strip the negative so its detected as a numeric
+    #         if line.isnumeric():
+    #             integer_line = int(line)
+    #             value = sign * integer_line
+    #             # print(f"numeric:{line}, sign:{sign}")
+    #             random_taps.append(value)
+    #         else:
+    #             random_taps.append(0)
+    # print(f"Read: random_taps.csv as input data for random_taps")
 
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(np.arange(0, 63, 1), random_taps)
-    ax.grid(True)
-    ax.set_title("Random Filter Taps")
-    ax.set_xlabel("Tap Index")
-    ax.set_ylabel("Tap Value")
-    _save(fig, "random_taps_plot.png")
+    # fig, ax = plt.subplots(figsize=(8, 5))
+    # ax.plot(np.arange(0, 63, 1), random_taps)
+    # ax.grid(True)
+    # ax.set_title("Random Filter Taps")
+    # ax.set_xlabel("Tap Index")
+    # ax.set_ylabel("Tap Value")
+    # _save(fig, "random_taps_plot.png")
 
-    graph_sin_all(data.x_comb, scaled_data, scaled_data, "compare_float_vs_scaled.png")
+    # graph_sin_all(data.x_comb, scaled_data, scaled_data, "compare_float_vs_scaled.png")
