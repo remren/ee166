@@ -39,10 +39,46 @@ print(grpdelay_fir)
 ## has a latency or group delay of order/2, so 62/2... however here,
 ## For some reason, need to use a shift of 30 to perfectly align signals.
 ## Could be due to off by 1 error?
-## SHOULD ASK PROF ABOUT THIS.
+## SHOULD ASK PROF ABOUT THIS. (nada)
 print(len(b_fir))
-shifted, tn_shift = create_sin(1, 400, 30, s_rate, t_total)
+shifted_400, tn_shift_400 = create_sin(1, 400, 30, s_rate, t_total)
+shifted_500, tn_shift_500 = create_sin(1, 500, 30, s_rate, t_total)
 
+def pp_atten_comp(x, y):
+    # Measure peak-to-peak amplitude of original 400 Hz signal
+    input_pp = np.max(x) - np.min(y)
 
-# plt.plot(tn_500, y)
-# plt.show()
+    # Measure peak-to-peak amplitude of filtered output
+    # (Only valid if 500 Hz is heavily attenuated and 400 Hz dominates)
+    output_pp = np.max(y) - np.min(y)
+
+    # Calculate attenuation
+    attenuation = output_pp / input_pp  # Linear ratio
+    attenuation_db = 20 * np.log10(attenuation)  # Convert to dB
+
+    print(f"Attenuation ratio: {attenuation:.4f}")
+    print(f"Attenuation in dB: {attenuation_db:.2f} dB")
+
+def measure_rms(signal, steady_state_idx=None):
+    """Calculate RMS amplitude, optionally only in steady-state region."""
+    if steady_state_idx:
+        signal = signal[steady_state_idx:]  # Skip transient
+    return np.sqrt(np.mean(signal**2))
+
+if __name__ == "__main__":
+    # Checking attenuation via peak-to-peak
+    print("*** Attenuation Comparison via Peak-to-Peak ***")
+    pp_atten_comp(x_400, y)
+
+    # Checking attenuation via RMS comparison
+    # Use steady-state portion to avoid filter transient
+    transient_samples = 63  # Filter length for settling time
+    input_rms = measure_rms(x_400, transient_samples)
+    output_rms = measure_rms(y, transient_samples)
+
+    attenuation = output_rms / input_rms
+    attenuation_db = 20 * np.log10(attenuation)
+    print("*** Attenuation Comparison via RMS ***")
+    print(f"Input RMS: {input_rms:.4f}")
+    print(f"Output RMS: {output_rms:.4f}")
+    print(f"Attenuation in dB: {attenuation_db:.2f} dB")

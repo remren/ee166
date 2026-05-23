@@ -5,8 +5,11 @@ Inputs to FIR filter, 2 sinusoids:
 Therefore, it is only possible to have a maximum amp. of 2.
     - For a 10-bit fixed-point (fxp) signal representation...
         1. want it signed (1-bit)
-        2. integer values only 0 to 2, so 2-bits
-    - Thus: 1-bit signed, 2 bits for int, and 7 bits for fractional parts
+        2. integer values only 0 to 1, so 1-bit
+    - Thus: 1-bit signed, 1 bit for int, and 8 bits for fractional parts
+    - Why? Because to reach a max decimal value of 2 in fxp is just:
+      - 0 for the signed bit, 1 for the integer bit, and 0xF for the fractional part
+      - Which is approximately 2 (in reality in decimal: 1 + 0.99 something close to 1)
     
     - to convert from decimal to fxp, its Number -> * 2^(number of fractional bits) -> 2s comp
     - other way around from fxp to decimal -> 2s comp -> 2^(-number of fractional bits)
