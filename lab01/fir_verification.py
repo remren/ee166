@@ -32,7 +32,7 @@ b_fir = fir_TAP63.filt_coeff
 y = signal.lfilter(b_fir, 1, x_comb)
 
 freq_grpdelay_fir, grpdelay_fir = signal.group_delay([b_fir, 1], fs=s_rate)
-print(grpdelay_fir)
+# print(grpdelay_fir)
 
 ## From EE125, recall...
 ## An FIR filter of length 63 or has 63 TAPs aka 62nd-order
@@ -40,7 +40,7 @@ print(grpdelay_fir)
 ## For some reason, need to use a shift of 30 to perfectly align signals.
 ## Could be due to off by 1 error?
 ## SHOULD ASK PROF ABOUT THIS. (nada)
-print(len(b_fir))
+# print(len(b_fir))
 shifted_400, tn_shift_400 = create_sin(1, 400, 30, s_rate, t_total)
 shifted_500, tn_shift_500 = create_sin(1, 500, 30, s_rate, t_total)
 

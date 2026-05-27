@@ -12,7 +12,7 @@ FXP_FRAC = 8
 FXP_INT  = 1
 SCALE = int(2 ** FXP_FRAC) # for 10-bit, 1 signed bit, 1 integer bit, 8 fractional bits.
 
-# Plotting Helpers
+# *** Plotting Helpers ***
 def _save(fig, filename):
     """Save figure to images/ and close."""
     os.makedirs(SAVE_DIR, exist_ok=True)
@@ -21,19 +21,42 @@ def _save(fig, filename):
     plt.close(fig)
     print(f"  Saved: {path}")
 
-# Conversion Helpers
+# *** Conversion Helpers ***
+
+# def float_to_fxp(value):
+#     values = np.asarray(value)
+#     scaled = np.round(values * SCALE)
+#     # Q1.8: range is [-2^(INT_BITS), 2^(INT_BITS) - 2^(-FRAC_BITS)]
+#     max_val = (2 ** FXP_INT) * SCALE - 1  
+#     min_val = -(2 ** FXP_INT) * SCALE
+#     scaled = np.clip(scaled, min_val, max_val)
+#     return scaled.astype(int)
+
+# def fxp_to_float(value):
+#     values = np.asarray(value)
+#     return values / SCALE
+
+# def float_to_fxp(value):
+#     values = np.asarray(value)
+#     scaled = np.round(values * SCALE)
+#     scaled = np.clip(scaled, -FXP_INT*SCALE, FXP_INT*SCALE-1)
+#     return scaled.astype(int)
 
 def float_to_fxp(value):
     values = np.asarray(value)
     scaled = np.round(values * SCALE)
-    scaled = np.clip(scaled, -FXP_INT*SCALE, FXP_INT*SCALE-1)
+    # Q1.8: 1 sign + 1 int + 8 frac = 10 bits total
+    # Range: [-512, 511]
+    max_val = 2 * SCALE - 1  # 511
+    min_val = -2 * SCALE       # -512
+    scaled = np.clip(scaled, min_val, max_val)
     return scaled.astype(int)
 
 def fxp_to_float(value):
     values = np.asarray(value)
     return values / SCALE
 
-# File Writing Helpers
+# *** File Reading and Writing Helpers ***
 
 def write_array_to_csv(array, filename: str):
     """
@@ -48,66 +71,48 @@ def write_array_to_csv(array, filename: str):
     
     print(f"  Saved {len(array)} values to {filename}")
 
-def write_filter_taps_to_csv(filename="filter_taps.txt"):
-    """
-    Write filter coefficients to a text file.
-    Format: One integer value per line (scaled for 10-bit signed).
-    """
-    ## Assuming filter taps are available in data, or using default bandpass filter
-    ## For a 63-tap FIR filter with passband around 400 Hz
-    # if hasattr(data, 'filter_taps'):
-    #     taps = data.filter_taps
-    # # else:
-    # #     exit("Failed - No taps found")
-    # else:
-    #     # Generate example 63-tap bandpass filter coefficients
-    #     # This is a placeholder - replace with actual filter design
-    #     from scipy import signal
-    #     nyquist = data.s_rate / 2
-    #     low = 350 / nyquist
-    #     high = 450 / nyquist
-    #     taps = signal.firwin(63, [low, high], pass_zero=False)
+ # Code to process RTL csv output and return as an array
+def read_array_from_csv(filename: str):
+    arr = []
+    with open(filename, 'r') as f:
+        for line in f:
+            sign = 1
+            line = line.strip()
+            if line[0][0] == '-':
+                sign = -1
+                line = line[1:] # strip the negative so its detected as a numeric
+            if line.isnumeric():
+                integer_line = int(line)
+                value = sign * integer_line
+                # print(f"numeric:{line}, sign:{sign}")
+                arr.append(value)
+            else:
+                arr.append(0)
+    print(f"Read: {filename} as input data for returned array")
+    return arr
 
-    scaled_taps = fir_TAP63.filt_coeff
-    
-    # # Scale to 10-bit signed integers
-    # max_abs = np.max(np.abs(taps))
-    # if max_abs > 0:
-    #     scaled_taps = np.round(taps / max_abs * 511).astype(int)
-    # else:
-    #     scaled_taps = np.zeros_like(taps, dtype=int)
-    
-    # scaled_taps = np.clip(scaled_taps, -512, 511)
-    
-    with open(filename, 'w', newline='') as f:
-        for value in scaled_taps:
-            f.write(f"{value}\n")
-    
-    print(f"  Saved {len(scaled_taps)} filter taps to {filename}")
-
-## *** Graphing Python Results ***
-
-def graph_sin_all(s_400, s_500, s_comb, filename):
+# *** Graphing Functions ***
+def graph_sin_all(x_arr, s_400, s_500, s_comb, filename):
     # Graphing combining sinusoids for test data.
 
     figure, (sp1, sp2, sp3) = plt.subplots(3, 1, figsize=(20, 8))
 
     # 400 Hz component
-    sp1.plot(GRAPHING_TN, s_400, lw=1, color='green', marker='.')
+    sp1.plot(x_arr, s_400, lw=1, color='green', marker='.')
     sp1.grid(True)
     sp1.set_title('400 Hz Sinusoid Component')
     sp1.set_ylabel('Amplitude')
     sp1.set_xlabel('Time (s)')
 
     # 500 Hz component
-    sp2.plot(GRAPHING_TN, s_500, lw=1, color='blue', marker='.')
+    sp2.plot(x_arr, s_500, lw=1, color='blue', marker='.')
     sp2.grid(True)
     sp2.set_title('500 Hz Sinusoid Component')
     sp2.set_ylabel('Amplitude')
     sp2.set_xlabel('Time (s)')
 
     # Combined signal (400 Hz + 500 Hz)
-    sp3.plot(GRAPHING_TN, s_comb, lw=1, color='red', marker='.')
+    sp3.plot(x_arr, s_comb, lw=1, color='red', marker='.')
     sp3.grid(True)
     sp3.set_title('Combined Sinusoid (400 Hz + 500 Hz)')
     sp3.set_ylabel('Amplitude')
@@ -117,6 +122,86 @@ def graph_sin_all(s_400, s_500, s_comb, filename):
     figure.tight_layout()
 
     _save(figure, filename)
+
+def graph_float_fxp_conversion_error(x_arr,
+                                    float_orig,
+                                    float_conv,
+                                    float_diff,
+                                    average,
+                                    filename):
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(x_arr,
+            float_orig,
+            lw=4,
+            markersize=15,
+            color="green", marker=".", label="s_comb Original Float")
+    ax.plot(x_arr,
+            float_conv,
+            lw=1, color="blue", marker=".", label="s_comb to FXP then to Float")
+    ax.plot(x_arr,
+            float_diff,
+            lw=1, color="red", marker=".",
+            label=f"Error (Avg:{average})")
+    ax.grid(True)
+    ax.set_title("Error from Float to FXP and FXP to Float Conversions")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Amplitude")
+    ax.legend(loc="upper right")    
+    _save(fig, filename)
+
+def graph_group_delay_comp(x_arr,
+                           float_s_400,
+                           float_s_y,
+                           float_s_400_grp_delay_comp,
+                           filename):
+    """Plot filtered output vs. shifted and original 400 Hz references."""
+
+    figure, (sp1, sp2) = plt.subplots(2, 1, figsize=(20, 8))
+
+    # Top subplot: filtered output vs. time-shifted 400 Hz reference
+    sp1.plot(x_arr,
+             float_s_y, 
+             lw=1, color="green", marker=".", label="Filtered Output")
+    sp1.plot(
+        x_arr,
+        float_s_400_grp_delay_comp,
+        lw=1,
+        color="red",
+        marker=".",
+        label="400 Hz (Shifted 30 Samples)",
+    )
+    sp1.grid(True)
+    sp1.set_title("Filtered Output vs. Time-Shifted 400 Hz Sinusoid")
+    sp1.set_ylabel("Amplitude")
+    sp1.set_xlabel("Time (s)")
+    sp1.legend(loc="upper right")
+
+    # Bottom subplot: filtered output vs. original 400 Hz component
+    sp2.plot(x_arr,
+             float_s_y,
+             lw=1, color="green", marker=".", label="Filtered Output")
+    sp2.plot(
+        x_arr,
+        float_s_400,
+        lw=1,
+        color="blue",
+        marker=".",
+        label="Original 400 Hz",
+    )
+    sp2.grid(True)
+    sp2.set_title("Filtered Output vs. Original 400 Hz Sinusoid")
+    sp2.set_ylabel("Amplitude")
+    sp2.set_xlabel("Time (s)")
+    sp2.legend(loc="upper right")
+
+    figure.suptitle(
+        "FIR Filter Output Comparison (Lack of Group Delay)", fontsize=14, fontweight="bold"
+    )
+    figure.tight_layout()
+
+    _save(figure, filename)
+
+# *** OLD STUFF BELOW ***
 
 def graph_sin_comb():
     """Plot filtered output vs. shifted and original 400 Hz references."""
@@ -164,6 +249,8 @@ def graph_sin_comb():
     figure.tight_layout()
 
     _save(figure, "result_conv_overlay.png")
+
+
 
 ## *** Comparing Python vs. RTL Outputs ***
 ## Helpers
@@ -262,9 +349,10 @@ if __name__ == "__main__":
 
     s_400 = signal_data.x_400
     s_500 = signal_data.x_500
-    s_comb = signal_data.x_comb
+    s_comb = signal_data.x_comb # Combined s400 and s500
 
-    # 0. TODO extend s_comb to a longer linspace
+    s_y    = signal_data.y # Python Result of FIR Filter
+
     # 1. Create CSV with combined sinusoids as input file for RTL testbench
     print("\n" + "=" * 60)
     print("1. Create input data CSV for RTL")
@@ -284,15 +372,66 @@ if __name__ == "__main__":
     fxp_taps   = float_to_fxp(tfilter_float_taps)
     print(f"Correct Float to FXP for FIR Filter: {tfilter_q1_8_taps == fxp_taps}")
 
-    write_array_to_csv(fxp_s_comb, "RTL_filter_taps.csv")
+    write_array_to_csv(fxp_taps, "RTL_filter_taps.csv")
 
-    # 3. TODO Graph and save s400 and s500, then combining in float
+    # 3. Graph and save s400 and s500, then combining in float
+    print("\n" + "=" * 60)
+    print("3. Graph the sinusoids and their combined result")
+    print("=" * 60)
+    GRAPHING_TN = np.linspace(0,
+                              signal_data.t_total,
+                              int(signal_data.s_rate * signal_data.t_total))
 
-    # 4. TODO Maybe? Convert float comb -> fxp -> back into float
+    graph_sin_all(GRAPHING_TN, s_400, s_500, s_comb, "s_400_500hz_modulated.png")
+
+
+    # 4. Convert float comb -> fxp -> back into float
     #    graph the comparison, losses from conversion?
+    print("\n" + "=" * 60)
+    print("4. Graph the error from conversions")
+    print("=" * 60)
 
-    # X. group delay comparison all in float 
-    # 5. automate running the tb, input, run and compare?
+    b2b_s_comb = fxp_to_float(float_to_fxp(s_comb))
+    diff_check = s_comb - b2b_s_comb
+    # print(f"s_comb: {s_comb}")
+    # print(f"b2b_s_comb: {b2b_s_comb}")
+    # print(f"diff_check: {diff_check}")
+    graph_float_fxp_conversion_error(GRAPHING_TN,
+                                     s_comb,
+                                     b2b_s_comb,
+                                     diff_check,
+                                     np.average(diff_check),
+                                     "conversion_error.png")
+
+    # 5. Graph the compensation from group delay all in float
+    print("\n" + "=" * 60)
+    print("5. Graph the comparison of having group delay compensated")
+    print("=" * 60)
+
+    s_shifted_400 = signal_data.shifted_400
+    graph_group_delay_comp(GRAPHING_TN,
+                           s_400,
+                           s_y,
+                           s_shifted_400,
+                           "result_conv_overlay.png")
+
+    # 6. Write Python input signal to CSV for RTL
+    # need to grab the longer timespace + signal
+    print("\n" + "=" * 60)
+    print("6. Produce a longer input signal for RTL")
+    print("=" * 60)
+
+    # 0. Extend s_comb to a longer linspace
+    t_total = 0.1 # in sec, longer than 0.08 from signal_data.t_total
+    s_rate = signal_data.s_rate
+    x_400, tn_400 = signal_data.create_sin(1, 400, 0, s_rate, t_total)
+    x_500, tn_500 = signal_data.create_sin(1, 500, 0, s_rate, t_total)
+
+    s_comb_longer = x_400 + x_500 # Combined sinusoid input data, but longer for later graphing
+
+    fxp_s_comb_longer = float_to_fxp(s_comb_longer)
+    write_array_to_csv(fxp_s_comb_longer, "RTL_s400_500_input_signal_longer.csv")
+
     # X. graph python vs. rtl
     # X. take fxp_comparison from other, and obtain impulses
     # X. compare and get error, rms
@@ -303,13 +442,6 @@ if __name__ == "__main__":
 
 
     # write_filter_taps_to_csv("filter_taps.txt")
-    
-    # # Generate plots
-    # graph_sin_all(data.x_400, data.x_500, data.x_comb, "s_400_500hz_modulated")
-    # graph_sin_comb()
-    # print("\nDone. All plots saved to images/")
-
-    # write_py_s400_output_to_csv(data.y)
 
     # y_fxp = [float_to_q9(v) for v in data.y]
     # y_fxp = np.asarray(y_fxp)
@@ -317,6 +449,7 @@ if __name__ == "__main__":
 
     # write_py_s400_output_to_csv(y_fxp, "s400_py_output_fxp.csv")
 
+    ## Code to process RTL csv output and save as a 
     # rtl_fxp = []
     # fxp_filename = "output.csv"
     # with open(fxp_filename, 'r') as f:

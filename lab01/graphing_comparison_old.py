@@ -9,10 +9,14 @@ import fir_TAP63
 import os
 
 # Parameters
+TAPS = 63
+
 SAVE_DIR = "./images"
 GRAPHING_TN = np.linspace(0, data.t_total, int(data.s_rate * data.t_total))
 FXP_FRAC = 8
-SCALE = 2 ** FXP_FRAC # for 10-bit, 1 signed bit, 1 integer bit, 8 fractional bits.
+FXP_INT  = 1
+
+SCALE = int(2 ** FXP_FRAC) # for 10-bit, 1 signed bit, 1 integer bit, 8 fractional bits.
 
 # Plotting Helpers
 def _save(fig, filename):
@@ -168,22 +172,37 @@ def graph_sin_comb():
 
 ## *** Comparing Python vs. RTL Outputs ***
 ## Helpers
+
 def float_to_q9(value):
-    """Convert floating point to Q1.9 fixed point"""
-    # Scale and round
-    scaled = round(value * SCALE)
-    
-    # Clamp to 10-bit signed range
-    if scaled > 127:
-        scaled = 127
-    elif scaled < -128:
-        scaled = -128
-        
-    return scaled
+    values = np.asarray(value)
+    scaled = np.round(values * SCALE)
+    # Q1.8: 1 sign + 1 int + 8 frac = 10 bits total
+    # Range: [-512, 511]
+    max_val = 2 * SCALE - 1  # 511
+    min_val = -2 * SCALE       # -512
+    scaled = np.clip(scaled, min_val, max_val)
+    return scaled.astype(int)
 
 def q9_to_float(value):
-    """Convert Q1.15 fixed point to floating point"""
-    return value / SCALE
+    values = np.asarray(value)
+    return values / SCALE
+
+# def float_to_q9(value):
+#     """Convert floating point to Q1.9 fixed point"""
+#     # Scale and round
+#     scaled = round(value * SCALE)
+    
+#     # Clamp to 10-bit signed range
+#     if scaled > 127:
+#         scaled = 127
+#     elif scaled < -128:
+#         scaled = -128
+        
+#     return scaled
+
+# def q9_to_float(value):
+#     """Convert Q1.15 fixed point to floating point"""
+#     return value / SCALE
 
 def write_py_s400_output_to_csv(py_output, filename="s400_py_output_float.csv"):
     with open(filename, 'w', newline='') as f:
@@ -297,12 +316,14 @@ if __name__ == "__main__":
 
     # graph_sin_comb_fxp(y_fxp, rtl_fxp)
 
-    shift = 2
+    shift = 1
     rtl_fxp_shift = rtl_fxp[shift:]
     for i in range(shift):
         rtl_fxp_shift.append(0)
     # rtl_fxp_shift = 2 * np.asarray(rtl_fxp_shift) # Test scaling to check if there's some weird conversion
-    graph_sin_comb_fxp(y_fxp, rtl_fxp_shift)
+    # graph_sin_comb_fxp(y_fxp, rtl_fxp_shift)
+    graph_sin_comb_fxp(y_fxp, rtl_fxp_shift[0:len(y_fxp)])
+
 
     test_taps = [float_to_q9(v) for v in fir_TAP63.filt_coeff]
     # print(test_taps)
@@ -335,4 +356,22 @@ if __name__ == "__main__":
     ax.set_ylabel("Tap Value")
     _save(fig, "random_taps_plot.png")
 
-    graph_sin_all(data.x_comb, scaled_data, scaled_data, "compare_float_vs_scaled.png")
+    new_input_signal = []
+    with open("RTL_s400_500_input_signal.csv", 'r') as f:
+        for line in f:
+            sign = 1
+            line = line.strip()
+            # print(line[0][0])
+            if line[0][0] == '-':
+                sign = -1
+                # print('neg')
+                line = line[1:] # strip the negative so its detected as a numeric
+            if line.isnumeric():
+                integer_line = int(line)
+                value = sign * integer_line
+                # print(f"numeric:{line}, sign:{sign}")
+                new_input_signal.append(value)
+            else:
+                new_input_signal.append(0)
+    print(f"Read: RTL_s400_500_input_signal.csv as input data for new_input_signal")
+    graph_sin_all(data.x_comb, scaled_data, new_input_signal, "compare_float_vs_scaled.png")

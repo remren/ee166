@@ -1,0 +1,12 @@
+1. figure out how RTL is compiled
+2. l1 ASAP
+3. reachout and ask wtf to do
+4. l2
+
+Notes
+- For labs, relevant .tars are:
+    - Lab2.tar.gz
+- VNC:
+    - on halligan, vncserver to start up
+    - goto VNC (remmina) and connect
+    - if completely exiting, make sure on halligan to do: vncserver kill:1

@@ -1,16 +1,18 @@
 *** TO FIX EVERYTHING AND CHECK MY RESULTS ARE OK ***
-1. [ ] Produce filter taps that are in the Q2.8 format
+1. [x] Produce filter taps that are in the Q1.8 format
     - [x] Make proper float to fxp and fxp to float functions
-    - [ ] Take from TFilter website
-    - [ ] Produce own to ensure that my conversion function is OK.
-2. [ ] Produce input data (sum of sins) in the Q2.8 format
+    - [x] Take from TFilter website
+    - [x] Produce own to ensure that my conversion function is OK.
+2. [ ] Produce input data (sum of sins) in the Q1.8 format
 3. [ ] Check result vs. reference both RTL and Python
 4. [ ] Clean up Python
-    - [ ] Convert floating results to Q2.8
+    - [ ] Convert floating results to Q1.8
     - [ ] Make a new graph: 3 subplots, 1. floating sum, 2. fxp sum, 3. overlay
-    - [ ] Redo function graph result_conv_overlay.png to not be awful
-    - [ ] Have input data in Q2.8
-    - [ ] Stop having to copy paste manually, have the script also run when Python is ran for the comparison
+    - [x] Redo function graph result_conv_overlay.png to not be awful
+    - [ ] Have input data in Q1.8
+    - [x] Stop having to copy paste manually, have the script also run when Python is ran for the comparison
+        - Instead of having the Python run iverilog/Makefile, I modified
+          the Makefile to run the Python. Run both with one command.
 5. [ ] Run on RTL again, check
 6. [ ] Compare RTL results vs. Python with graphs
 7. [ ] Compare RTL results vs. Python via RMS for sig number
@@ -78,3 +80,6 @@ Notes 5/22 @ 9:32 PM
         - And converting Fxp to floating is:     fxp / 2^m
         - Which means that the number of bits for the integer part doesn't matter!
         - Only the number of fractional bits needs to match to ensure correct conversion!!!
+
+    - im wrong again. Qm.n means assumed 1 bit for sign, m for integer, n for fractional.
+    - Therefore, Q1.8 is correct to represent 10-bit, 1 sign, 1 int, 8 frac.

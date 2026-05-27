@@ -1,0 +1,4 @@
+pwd: ihateicd
+
+New 'vm-linux01:1 (rren02)' desktop is vm-linux01:1
+

@@ -26,7 +26,7 @@ module FIR_63TAP(
             intermed[0] <= 26'd0;
             filt_consts[0] <= filt_constant;
             in2 <= in;
-            out[9:0] <= 10'($signed(intermed[63]) >>> 9);
+            out[9:0] <= 10'($signed(intermed[63]) >>> 8);
         end
     end
 
