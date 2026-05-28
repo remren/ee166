@@ -1,74 +1,53 @@
+`timescale 1ns/1ps
+
 module FIR_63TAP(
     input logic signed [9:0] in,
-    input logic signed [9:0] filt_constant,
+    input logic signed [9:0] filt_constants[62:0],
     output logic signed [9:0] out,
     input logic CLK,
     input logic RSTN,
-    input logic EN,
-    input logic FILT_SHIFT
+    input logic EN
 );
 
-    // Shift register for input samples
-    logic signed [9:0] shift_reg [62:0];  // 63-stage shift register
-    logic signed [9:0] filt_consts [62:0];  // 63 coefficients
-    logic signed [19:0] mult [62:0];  // 63 multipliers (10-bit * 10-bit = 20-bit)
-    logic signed [25:0] sum;  // Accumulator (needs extra bits for 63 additions)
+    logic signed [25:0] intermed[63:0];
+    logic signed [19:0] mult[63:0];
+    logic signed [9:0] big_reg[62:0];
+    logic signed [9:0] filt_consts[62:0];
 
-    integer i;
-
-    always_ff @(posedge CLK, negedge RSTN) begin
+    // Main sequential block
+    always_ff @(posedge CLK, negedge RSTN) begin  
         if (!RSTN) begin
-            // Reset shift register and coefficients
-            for (i = 0; i < 63; i = i + 1) begin
-                shift_reg[i] <= 10'd0;
-                filt_consts[i] <= 10'd0;
+            for (int d = 0; d < 63; d = d + 1) begin
+                big_reg[d] <= 0;
+                filt_consts[d] <= 0;
             end
-            out <= 10'd0;
+            out[9:0] <= 0;
         end else if (EN) begin
-            if (FILT_SHIFT) begin
-                // Load coefficients
-                filt_consts[0] <= filt_constant;
-                for (i = 0; i < 62; i = i + 1) begin
-                    filt_consts[i+1] <= filt_consts[i];
-                end
-                
-                // During coefficient loading, also shift in zeros
-                shift_reg[0] <= 10'd0;
-                for (i = 0; i < 62; i = i + 1) begin
-                    shift_reg[i+1] <= shift_reg[i];
-                end
-            end else begin
-                // Normal operation: shift in new input sample
-                shift_reg[0] <= in;
-                for (i = 0; i < 62; i = i + 1) begin
-                    shift_reg[i+1] <= shift_reg[i];
-                end
+            // Shift register
+            for (int d = 1; d < 63; d = d + 1) begin
+                big_reg[d] <= big_reg[d-1];
             end
+            big_reg[0] <= in;
+            
+            // Load coefficients
+            for (int d = 0; d < 63; d = d + 1) begin
+                filt_consts[d] <= filt_constants[d];
+            end
+            
+            // Output scaling - shift right by 8 bits via [16:8] to
+            //                  eliminate accumulated 2**8 from using Q1.8
+            out[9:0] <= {intermed[63][25], intermed[63][16:8]};
         end
     end
 
-    // Compute multiplications (combinational)
-    always_comb begin
-        for (i = 0; i < 63; i = i + 1) begin
-            mult[i] = filt_consts[i] * shift_reg[i];
-        end
+    // Combinational systolic chain
+    assign intermed[0] = 26'd0;  // Initialize first accumulator
+    
+    genvar t;
+    generate for (t = 0; t < 63; t = t + 1) begin: dsp01
+        assign mult[t] = big_reg[62-t] * filt_consts[t];
+        assign intermed[t+1] = mult[t] + intermed[t];
     end
-
-    // Sum all products (combinational)
-    always_comb begin
-        sum = 26'd0;
-        for (i = 0; i < 63; i = i + 1) begin
-            sum = sum + mult[i];
-        end
-    end
-
-    // Output with scaling
-    always_ff @(posedge CLK, negedge RSTN) begin
-        if (!RSTN) begin
-            out <= 10'd0;
-        end else if (EN && !FILT_SHIFT) begin
-            out <= sum >>> 8;  // Scale down (divide by 256 for Q1.8 format)
-        end
-    end
+    endgenerate
 
 endmodule
