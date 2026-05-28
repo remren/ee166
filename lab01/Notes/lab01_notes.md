@@ -20,12 +20,12 @@ Therefore, it is only possible to have a maximum amp. of 2.
    - realizing im probably the problem, trying to force an interpretation onto python's systems.
       - solution: work in numpy. has unsigned and signed. therefore, even though we want 10-bit words, work in 16-bit words (numpy only supports standard word sizes)
          - deal with it using sign extension
-#2 implement in verilog
+#2 implement in verilog [DONE]
    - implement convolution
       - implement MAC
       - implement conv
    - filter coefficients: either get 10-bit fxp from site, or just scale.
-#3 compare TB results to Python
+#3 compare TB results to Python [DONE]
    - data coming out of TB will be (?) 10-bit Fxp
    - data in python is decimal
    - want to compare Fxp to Fxp or decimal to decimal
@@ -53,7 +53,7 @@ FIR -> group delay
 5. [x] Run on RTL again, check
 6. [x] Compare RTL results vs. Python with graphs
 7. [x] Compare RTL results vs. Python via RMS for sig number
-8. [ ] Fix RTL to load in filter constants.
+8. [x] Fix RTL to load in filter constants.
 
 
 [x] Convert python or convert RTL to float and compare
@@ -76,7 +76,7 @@ FIR -> group delay
 [Not Needed] Graph Output of s400_500 but FXP, aka the input signal
 [x] compare RTL output vs. python
 [Yes, but only did abs. mean] obtain RMS difference with dB attenuation of RTL vs. Python
-[ ] Rewrite SV in preparation for loading in filter constants via shift register for Lab 2 and on.
+[x] Rewrite SV in preparation for loading in filter constants via shift register for Lab 2 and on.
 
 Notes 5/22 @ 9:32 PM
 - Understanding of what's happened

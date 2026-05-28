@@ -156,7 +156,7 @@ def graph_group_delay_comp(x_arr,
         lw=1,
         color="red",
         marker=".",
-        label="400 Hz (Shifted 30 Samples)",
+        label="Original 400 Hz sin (Shifted 30 Samples)",
     )
     sp1.grid(True)
     sp1.set_title("Filtered Output vs. Time-Shifted 400 Hz Sinusoid")
@@ -174,7 +174,7 @@ def graph_group_delay_comp(x_arr,
         lw=1,
         color="blue",
         marker=".",
-        label="Original 400 Hz",
+        label="Original 400 Hz sin (Shifted 30 Samples)",
     )
     sp2.grid(True)
     sp2.set_title("Filtered Output vs. Original 400 Hz Sinusoid")
@@ -247,6 +247,58 @@ def graph_filter_impulse_response(fxp_filt_coeff, filename):
     ax.set_xlabel("Samples, n")
     fig.tight_layout()
     _save(fig, filename)
+
+def graph_float_s400_vs_rtl_out(x_arr,
+                                float_rtl_out,
+                                float_s_400_shifted,
+                                float_diff,
+                                start_transient_samples,
+                                filename):
+    figure, (sp1, sp2) = plt.subplots(2, 1, figsize=(20, 8))
+
+    # Top subplot: RTL filtered output (float) vs. time-shifted 400 Hz reference
+    sp1.plot(x_arr,
+             float_rtl_out, 
+             lw=1, color="green", marker=".", label="Filtered Output from RTL (Q1.8 to Float)")
+    sp1.plot(x_arr,
+             float_s_400_shifted,
+             lw=1,
+             color="red",
+             marker=".",
+             label="400 Hz (Shifted 30 Samples)")
+    sp1.grid(True)
+    sp1.set_title("Filtered Output vs. Time-Shifted 400 Hz Sinusoid")
+    sp1.set_ylabel("Amplitude")
+    sp1.set_xlabel("Time (s)")
+    sp1.legend(loc="upper right")
+    
+    # Calculate average difference excluding transient samples
+    avg_diff = np.mean(np.abs(float_diff[start_transient_samples:]))
+    
+    # Bottom subplot: Difference (s_400 - RTL Filtered Output)
+    sp2.plot(x_arr,
+             np.abs(float_diff),
+             lw=1,
+             color="blue",
+             marker=".",
+             label=f"Absolute Difference (400Hz sin - RTL Filtered Output in Float)")
+    
+    # Add the line for average difference in steady state
+    sp2.axhline(y=avg_diff, color='red', linestyle='-', lw=1,
+                label=f'Average Steady State Error: {avg_diff:.6f}')
+
+    sp2.grid(True)
+    sp2.set_title("Absolute Difference in Float, (400Hz sin - Filtered RTL Output)")
+    sp2.set_ylabel("Amplitude")
+    sp2.set_xlabel("Time (s)")
+    sp2.legend(loc="upper right")
+
+    figure.suptitle(
+        "Original 400Hz Sin Signal vs. RTL Filtered Output", fontsize=14, fontweight="bold"
+    )
+    figure.tight_layout()
+
+    _save(figure, filename)
 
 ## *** v Main Below v ***
 
@@ -365,3 +417,18 @@ if __name__ == "__main__":
 
     graph_filter_impulse_response(fxp_taps, "fir_TAP63_impulse_response.png")
 
+    # 9. Graph the error comparing the original s_400 float against the RTL output in float
+    print("\n" + "=" * 60)
+    print("9. Graph error comparing original s_400 vs. RTL filter output (to float)")
+    print("=" * 60)
+
+    float_rtl_out_trim = fxp_to_float(fxp_rtl_out_trim)
+    float_diff = np.abs(s_shifted_400) - np.abs(float_rtl_out_trim)
+    start_steady_state = 63
+
+    graph_float_s400_vs_rtl_out(GRAPHING_TN,
+                                float_rtl_out_trim,
+                                s_shifted_400,
+                                float_diff,
+                                start_steady_state,
+                                "result_compare_original_vs_rtl_out.png")
