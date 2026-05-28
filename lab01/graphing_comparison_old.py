@@ -316,10 +316,11 @@ if __name__ == "__main__":
 
     # graph_sin_comb_fxp(y_fxp, rtl_fxp)
 
-    shift = 1
+    # shift = 1 # for fixed rtl
+    shift = 2 # for unfixed RTL
     rtl_fxp_shift = rtl_fxp[shift:]
-    for i in range(shift):
-        rtl_fxp_shift.append(0)
+    # for i in range(shift):
+    #     rtl_fxp_shift.append(0)
     # rtl_fxp_shift = 2 * np.asarray(rtl_fxp_shift) # Test scaling to check if there's some weird conversion
     # graph_sin_comb_fxp(y_fxp, rtl_fxp_shift)
     graph_sin_comb_fxp(y_fxp, rtl_fxp_shift[0:len(y_fxp)])
@@ -374,4 +375,4 @@ if __name__ == "__main__":
             else:
                 new_input_signal.append(0)
     print(f"Read: RTL_s400_500_input_signal.csv as input data for new_input_signal")
-    graph_sin_all(data.x_comb, scaled_data, new_input_signal, "compare_float_vs_scaled.png")
+    graph_sin_all(data.x_comb, scaled_data, new_input_signal[0:len(data.x_comb)], "compare_float_vs_scaled.png")

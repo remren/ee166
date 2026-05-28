@@ -58,9 +58,9 @@ module tb;
         $fclose(fp);
 
         // Process input data
-        fp = $fopen({file_path, "RTL_s400_500_input_signal.csv"}, "r");
+        fp = $fopen({file_path, "RTL_s400_500_input_signal_longer.csv"}, "r");
         if (fp == 0) begin
-            $display("Error: Could not open RTL_s400_500_input_signal.csv");
+            $display("Error: Could not open RTL_s400_500_input_signal_longer.csv");
             $finish;
         end
         

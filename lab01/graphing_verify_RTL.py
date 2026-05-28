@@ -72,7 +72,7 @@ def write_array_to_csv(array, filename: str):
     print(f"  Saved {len(array)} values to {filename}")
 
  # Code to process RTL csv output and return as an array
-def read_array_from_csv(filename: str):
+def read_csv_to_array(filename: str):
     arr = []
     with open(filename, 'r') as f:
         for line in f:
@@ -92,9 +92,12 @@ def read_array_from_csv(filename: str):
     return arr
 
 # *** Graphing Functions ***
-def graph_sin_all(x_arr, s_400, s_500, s_comb, filename):
-    # Graphing combining sinusoids for test data.
 
+def graph_sin_all(x_arr, s_400, s_500, s_comb, filename):
+    """
+    graph_sin_all:
+        - to graph all the sinusoids used for and the actual input signal
+    """
     figure, (sp1, sp2, sp3) = plt.subplots(3, 1, figsize=(20, 8))
 
     # 400 Hz component
@@ -129,6 +132,10 @@ def graph_float_fxp_conversion_error(x_arr,
                                     float_diff,
                                     average,
                                     filename):
+    """
+    graph_float_fxp_conversion_error:
+        - to graph the conversion error between fxp/float and float/fxp 
+    """
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.plot(x_arr,
             float_orig,
@@ -201,56 +208,66 @@ def graph_group_delay_comp(x_arr,
 
     _save(figure, filename)
 
-# *** OLD STUFF BELOW ***
-
-def graph_sin_comb():
-    """Plot filtered output vs. shifted and original 400 Hz references."""
-    s_y = data.y
-    shifted_400 = data.shifted_400
-    s_400 = data.x_400
-
+def graph_filter_output_comp(x_arr,
+                             fxp_y_python,
+                             fxp_y_rtl,
+                             fxp_diff,
+                             filename):
+    """
+    graph_filter_output_comp:
+        - Graph the FIR filter output
+        - Compare the Python output against the RTL
+    """
     figure, (sp1, sp2) = plt.subplots(2, 1, figsize=(20, 8))
 
-    # Top subplot: filtered output vs. time-shifted 400 Hz reference
-    sp1.plot(GRAPHING_TN, s_y, lw=1, color="green", marker=".", label="Filtered Output")
-    sp1.plot(
-        GRAPHING_TN,
-        shifted_400,
-        lw=1,
-        color="red",
-        marker=".",
-        label="400 Hz (Shifted 30 Samples)",
-    )
+    # Top subplot: Python vs. RTL FIR Filter Results
+    sp1.plot(x_arr,
+             fxp_y_python,
+             color="blue",
+             lw=4,
+             markersize=15,
+             marker=".", label="Python Filtered Output")
+    sp1.plot(x_arr,
+             fxp_y_rtl,
+             lw=1, color="orange", marker=".",
+             label="RTL Filtered Output (Shift by 1 sample due to setup)")
     sp1.grid(True)
-    sp1.set_title("Filtered Output vs. Time-Shifted 400 Hz Sinusoid")
+    sp1.set_title("Python Filtered Output vs. RTL Filtered Output, Fixed-point Q1.8")
     sp1.set_ylabel("Amplitude")
     sp1.set_xlabel("Time (s)")
     sp1.legend(loc="upper right")
 
-    # Bottom subplot: filtered output vs. original 400 Hz component
-    sp2.plot(GRAPHING_TN, s_y, lw=1, color="green", marker=".", label="Filtered Output")
-    sp2.plot(
-        GRAPHING_TN,
-        s_400,
-        lw=1,
-        color="blue",
-        marker=".",
-        label="Original 400 Hz",
-    )
+    # Bottom subplot: Difference (error?), python - RTL
+    sp2.plot(x_arr,
+             np.abs(fxp_diff),
+             lw=1, color="red", marker=".",
+             label=f"Difference (Python - RTL), Avg. Error: {np.average(np.abs(fxp_diff))}")
     sp2.grid(True)
-    sp2.set_title("Filtered Output vs. Original 400 Hz Sinusoid")
+    sp2.set_title("Absolute Difference of Filtered Python Output vs. RTL Output in Fixed-point Q1.8, aka Error")
     sp2.set_ylabel("Amplitude")
     sp2.set_xlabel("Time (s)")
     sp2.legend(loc="upper right")
 
     figure.suptitle(
-        "FIR Filter Output Comparison (Lack of Group Delay)", fontsize=14, fontweight="bold"
+        "FIR Filter Output Comparison Python vs. RTL", fontsize=14, fontweight="bold"
     )
     figure.tight_layout()
 
-    _save(figure, "result_conv_overlay.png")
+    _save(figure, filename)
 
+def graph_filter_impulse_response(fxp_filt_coeff, filename):
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(np.arange(0,len(fxp_filt_coeff),1),
+            fxp_filt_coeff,
+            lw=1, color="green", marker=".", label="Filter TAPs ")
+    ax.grid(True)
+    ax.set_title("FIR Filter Impulse Response, Fixed-point Q1.8")
+    ax.set_ylabel("Amplitude")
+    ax.set_xlabel("Samples, n")
+    fig.tight_layout()
+    _save(fig, filename)
 
+# *** OLD STUFF BELOW ***
 
 ## *** Comparing Python vs. RTL Outputs ***
 ## Helpers
@@ -369,7 +386,8 @@ if __name__ == "__main__":
     tfilter_float_taps = TFilter_TAP63_double.filt_coeff
     tfilter_q1_8_taps  = TFilter_TAP63_fxp_Q1_8.filt_coeff
 
-    fxp_taps   = float_to_fxp(tfilter_float_taps)
+    fxp_taps = float_to_fxp(tfilter_float_taps)
+
     print(f"Correct Float to FXP for FIR Filter: {tfilter_q1_8_taps == fxp_taps}")
 
     write_array_to_csv(fxp_taps, "RTL_filter_taps.csv")
@@ -416,12 +434,10 @@ if __name__ == "__main__":
                            "result_conv_overlay.png")
 
     # 6. Write Python input signal to CSV for RTL
-    # need to grab the longer timespace + signal
     print("\n" + "=" * 60)
     print("6. Produce a longer input signal for RTL")
     print("=" * 60)
 
-    # 0. Extend s_comb to a longer linspace
     t_total = 0.1 # in sec, longer than 0.08 from signal_data.t_total
     s_rate = signal_data.s_rate
     x_400, tn_400 = signal_data.create_sin(1, 400, 0, s_rate, t_total)
@@ -432,83 +448,37 @@ if __name__ == "__main__":
     fxp_s_comb_longer = float_to_fxp(s_comb_longer)
     write_array_to_csv(fxp_s_comb_longer, "RTL_s400_500_input_signal_longer.csv")
 
-    # X. graph python vs. rtl
+    # 7. Graph the FIR filter results, comparing Python vs. RTL
+    print("\n" + "=" * 60)
+    print("7. Graph FIR filter results, compare Python vs. RTL")
+    print("=" * 60)
+    
+    # Read in RTL output from CSV
+    fxp_rtl_out = read_csv_to_array("RTL_output.csv")
+    shift = 2 # 1 for fixed RTL, 2 for unfixed RTL
+    fxp_rtl_out_trim = fxp_rtl_out[shift:shift+len(GRAPHING_TN)]
+    # print(f"len:{len(fxp_rtl_out)}, len_trim:{len(fxp_rtl_out_trim)}")
+
+    fxp_s_y = float_to_fxp(s_y) # Python output in Q1.8
+    
+    fxp_diff_s_y_rtl_out_trim =  np.abs(fxp_s_y) - np.abs(fxp_rtl_out_trim)
+
+    graph_filter_output_comp(GRAPHING_TN,
+                             fxp_s_y,
+                             fxp_rtl_out_trim,
+                             fxp_diff_s_y_rtl_out_trim,
+                             "result_compare_filter_out.png")
+    
+    # 8. Graph the FIR Filter Impulse Response (fxp)
+    print("\n" + "=" * 60)
+    print("8. Graph FIR filter impulse response")
+    print("=" * 60)
+
+    graph_filter_impulse_response(fxp_taps, "fir_TAP63_impulse_response.png")
+
+
     # X. take fxp_comparison from other, and obtain impulses
     # X. compare and get error, rms
 
-
-
-    # X. Compare sinusoids
-
-
-    # write_filter_taps_to_csv("filter_taps.txt")
-
-    # y_fxp = [float_to_q9(v) for v in data.y]
-    # y_fxp = np.asarray(y_fxp)
-    # # print(y_fxp)
-
-    # write_py_s400_output_to_csv(y_fxp, "s400_py_output_fxp.csv")
-
-    ## Code to process RTL csv output and save as a 
-    # rtl_fxp = []
-    # fxp_filename = "output.csv"
-    # with open(fxp_filename, 'r') as f:
-    #     for line in f:
-    #         sign = 1
-    #         line = line.strip()
-    #         # print(line[0][0])
-    #         if line[0][0] == '-':
-    #             sign = -1
-    #             # print('neg')
-    #             line = line[1:] # strip the negative so its detected as a numeric
-    #         if line.isnumeric():
-    #             integer_line = int(line)
-    #             value = sign * integer_line
-    #             # print(f"numeric:{line}, sign:{sign}")
-    #             rtl_fxp.append(value)
-    #         else:
-    #             rtl_fxp.append(0)
-    # print(f"Read: {fxp_filename} as input data for rtl_fxp")
-    # print(rtl_fxp)
-
-    # # graph_sin_comb_fxp(y_fxp, rtl_fxp)
-
-    # shift = 2
-    # rtl_fxp_shift = rtl_fxp[shift:]
-    # for i in range(shift):
-    #     rtl_fxp_shift.append(0)
-    # # rtl_fxp_shift = 2 * np.asarray(rtl_fxp_shift) # Test scaling to check if there's some weird conversion
-    # graph_sin_comb_fxp(y_fxp, rtl_fxp_shift)
-
-    # test_taps = [float_to_q9(v) for v in fir_TAP63.filt_coeff]
-    # # print(test_taps)
-    # write_py_s400_output_to_csv(test_taps, filename="test_taps.csv")
-
-    # random_taps = []
-    # with open("random_taps.csv", 'r') as f:
-    #     for line in f:
-    #         sign = 1
-    #         line = line.strip()
-    #         # print(line[0][0])
-    #         if line[0][0] == '-':
-    #             sign = -1
-    #             # print('neg')
-    #             line = line[1:] # strip the negative so its detected as a numeric
-    #         if line.isnumeric():
-    #             integer_line = int(line)
-    #             value = sign * integer_line
-    #             # print(f"numeric:{line}, sign:{sign}")
-    #             random_taps.append(value)
-    #         else:
-    #             random_taps.append(0)
-    # print(f"Read: random_taps.csv as input data for random_taps")
-
-    # fig, ax = plt.subplots(figsize=(8, 5))
-    # ax.plot(np.arange(0, 63, 1), random_taps)
-    # ax.grid(True)
-    # ax.set_title("Random Filter Taps")
-    # ax.set_xlabel("Tap Index")
-    # ax.set_ylabel("Tap Value")
-    # _save(fig, "random_taps_plot.png")
-
-    # graph_sin_all(data.x_comb, scaled_data, scaled_data, "compare_float_vs_scaled.png")
+    # X. graph impulse response
+    # X. take that wacky fxp comparison filter to show confusion in report.
