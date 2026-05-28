@@ -23,25 +23,6 @@ def _save(fig, filename):
 
 # *** Conversion Helpers ***
 
-# def float_to_fxp(value):
-#     values = np.asarray(value)
-#     scaled = np.round(values * SCALE)
-#     # Q1.8: range is [-2^(INT_BITS), 2^(INT_BITS) - 2^(-FRAC_BITS)]
-#     max_val = (2 ** FXP_INT) * SCALE - 1  
-#     min_val = -(2 ** FXP_INT) * SCALE
-#     scaled = np.clip(scaled, min_val, max_val)
-#     return scaled.astype(int)
-
-# def fxp_to_float(value):
-#     values = np.asarray(value)
-#     return values / SCALE
-
-# def float_to_fxp(value):
-#     values = np.asarray(value)
-#     scaled = np.round(values * SCALE)
-#     scaled = np.clip(scaled, -FXP_INT*SCALE, FXP_INT*SCALE-1)
-#     return scaled.astype(int)
-
 def float_to_fxp(value):
     values = np.asarray(value)
     scaled = np.round(values * SCALE)
@@ -267,99 +248,7 @@ def graph_filter_impulse_response(fxp_filt_coeff, filename):
     fig.tight_layout()
     _save(fig, filename)
 
-# *** OLD STUFF BELOW ***
-
-## *** Comparing Python vs. RTL Outputs ***
-## Helpers
-def float_to_q9(value):
-    """Convert floating point to Q1.9 fixed point"""
-    # Scale and round
-    scaled = round(value * SCALE)
-    
-    # Clamp to 10-bit signed range
-    if scaled > 127:
-        scaled = 127
-    elif scaled < -128:
-        scaled = -128
-        
-    return scaled
-
-def q9_to_float(value):
-    """Convert Q1.15 fixed point to floating point"""
-    return value / SCALE
-
-def write_py_s400_output_to_csv(py_output, filename="s400_py_output_float.csv"):
-    with open(filename, 'w', newline='') as f:
-        for value in py_output:
-            f.write(f"{value}\n")
-    print(f"  Saved {len(py_output)} output values to {filename}")
-
-def graph_sin_comb_fxp(py_fxp, rtl_fxp):
-    """Plot filtered output vs. shifted and original 400 Hz references, but for FXP."""
-
-    figure, (sp1, sp2) = plt.subplots(2, 1, figsize=(20, 8))
-
-    # Top subplot: filtered output vs. time-shifted 400 Hz reference
-    sp1.plot(GRAPHING_TN, py_fxp, lw=1, color="green", marker=".", label="Filtered Output")
-    sp1.plot(
-        GRAPHING_TN,
-        rtl_fxp,
-        lw=1,
-        color="red",
-        marker=".",
-        label="400 Hz (Shifted 30 Samples)",
-    )
-    sp1.grid(True)
-    sp1.set_title("Filtered Output vs. Time-Shifted 400 Hz Sinusoid")
-    sp1.set_ylabel("Amplitude")
-    sp1.set_xlabel("Time (s)")
-    sp1.legend(loc="upper right")
-
-    # Bottom subplot: filtered output vs. original 400 Hz component
-    random_taps = []
-    with open("random_taps.csv", 'r') as f:
-        for line in f:
-            sign = 1
-            line = line.strip()
-            # print(line[0][0])
-            if line[0][0] == '-':
-                sign = -1
-                # print('neg')
-                line = line[1:] # strip the negative so its detected as a numeric
-            if line.isnumeric():
-                integer_line = int(line)
-                value = sign * integer_line
-                # print(f"numeric:{line}, sign:{sign}")
-                random_taps.append(value)
-            else:
-                random_taps.append(0)
-    print(f"Read: random_taps.csv as input data for random_taps")
-    sp2.plot(np.arange(0,63,1), random_taps, lw=1, color="green", marker=".", label="Random Taps")
-    # sp2.plot(GRAPHING_TN, rtl_fxp, lw=1, color="green", marker=".", label="Filtered Output")
-    # sp2.plot(
-    #     GRAPHING_TN,
-    #     s_400,
-    #     lw=1,
-    #     color="blue",
-    #     marker=".",
-    #     label="Original 400 Hz",
-    # )
-    sp2.grid(True)
-    sp2.set_title("Filtered Output vs. Original 400 Hz Sinusoid")
-    sp2.set_ylabel("Amplitude")
-    sp2.set_xlabel("Time (s)")
-    sp2.legend(loc="upper right")
-
-    figure.suptitle(
-        "FIR Filter Output Comparison (Lack of Group Delay)", fontsize=14, fontweight="bold"
-    )
-    figure.tight_layout()
-
-    _save(figure, "result_conv_overlay_fxp.png")
-
-# *** Main Functions *** 
-# 1. Create CSV with combined sinusoids as input file for RTL testbench
-
+## *** v Main Below v ***
 
 if __name__ == "__main__":
     import fir_verification as signal_data
@@ -476,9 +365,3 @@ if __name__ == "__main__":
 
     graph_filter_impulse_response(fxp_taps, "fir_TAP63_impulse_response.png")
 
-
-    # X. take fxp_comparison from other, and obtain impulses
-    # X. compare and get error, rms
-
-    # X. graph impulse response
-    # X. take that wacky fxp comparison filter to show confusion in report.
