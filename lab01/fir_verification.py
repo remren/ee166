@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 from scipy import signal
 
-import fir_TAP63
+import TFilter_TAP63_double
 
 """Create a sin function based on the following param values:
       - A = amplitude
@@ -28,7 +28,7 @@ x_500, tn_500 = create_sin(1, 500, 0, s_rate, t_total)
 x_comb = x_400 + x_500
 
 # "Ideal" convolution using lfilter from SciPy
-b_fir = fir_TAP63.filt_coeff
+b_fir = TFilter_TAP63_double.filt_coeff
 y = signal.lfilter(b_fir, 1, x_comb)
 
 freq_grpdelay_fir, grpdelay_fir = signal.group_delay([b_fir, 1], fs=s_rate)
