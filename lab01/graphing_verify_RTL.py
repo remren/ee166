@@ -344,7 +344,7 @@ if __name__ == "__main__":
     
     # Read in RTL output from CSV
     fxp_rtl_out = read_csv_to_array("RTL_output.csv")
-    shift = 2 # 1 for fixed RTL, 2 for unfixed RTL
+    shift = 1 # 1 for fixed RTL, 2 for unfixed RTL
     fxp_rtl_out_trim = fxp_rtl_out[shift:shift+len(GRAPHING_TN)]
     # print(f"len:{len(fxp_rtl_out)}, len_trim:{len(fxp_rtl_out_trim)}")
 
