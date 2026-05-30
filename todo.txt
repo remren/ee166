@@ -9,4 +9,6 @@ Notes
 - VNC:
     - on halligan, vncserver to start up
     - goto VNC (remmina) and connect
-    - if completely exiting, make sure on halligan to do: vncserver kill:1
+    - if completely exiting, make sure on halligan to do: vncserver kill:1 (wrong?)
+vncserver -kill vm-linux01:1
+

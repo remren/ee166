@@ -104,7 +104,7 @@ def graph_impulse_compare(float_orig, float_convert, fxp_orig, fxp_convert,
         lw=1,
         color="blue",
         marker=".",
-        label="Float to Fxp (Q2.8)",
+        label="Float to Fxp (Q1.8)",
     )
     sp2.plot(taps, 
              fxp_orig, lw=1, color="green", marker=".", label="TFilter Q1.7 (Misunderstood as 8 frac bits)")
