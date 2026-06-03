@@ -9,6 +9,7 @@ module tb;
     logic sample_clk = 0;
     logic signed [9:0] out;
     logic en = 0;
+    logic coeff_en = 0;  // New coefficient enable signal
 
     FIR_63TAP DUT (
         .in(in),
@@ -16,7 +17,8 @@ module tb;
         .out(out),
         .CLK(sample_clk),
         .RSTN(rst),
-        .EN(en)
+        .EN(en),
+        .COEFF_EN(coeff_en)  // Connect new port
     );
 
     integer fp;
@@ -37,14 +39,12 @@ module tb;
         // Reset sequence
         rst = 0;
         en = 0;
+        coeff_en = 0;
         #10;
         rst = 1;
         #10;
         
-        // Enable and load coefficients
-        en = 1;
-        
-        // Load filter coefficients from file
+        // Load filter coefficients from file (before enabling)
         fp = $fopen({file_path, "RTL_filter_taps.csv"}, "r");
         if (fp == 0) begin
             $display("Error: Could not open RTL_filter_taps.csv");
@@ -60,8 +60,22 @@ module tb;
         end
         $fclose(fp);
 
-        // Run some cycles to load coefficients and initialize pipeline with zeros
-        for (i = 0; i < 130; i++) begin
+        // Enable and load coefficients using coeff_en
+        en = 1;
+        coeff_en = 1;  // Enable coefficient loading
+        
+        // Run a few cycles to load coefficients
+        repeat(2) begin
+            #5;
+            sample_clk = 1;
+            #5;
+            sample_clk = 0;
+        end
+        
+        coeff_en = 0;  // Disable coefficient loading after they're loaded
+        
+        // Continue running cycles to initialize pipeline with zeros
+        for (i = 0; i < 128; i++) begin
             #5;
             sample_clk = 1;
             #5;
