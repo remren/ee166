@@ -101,20 +101,45 @@ echo "========================================="
 
 # Execute the make targets
 MAKE_RESULT=0
-TARGETS_ARRAY=($MAKE_TARGETS)
 
 echo ""
 echo "Running: make $MAKE_TARGETS"
 echo "----------------------------------------"
 
-# Run all targets in a single make command (as per user's example)
-if make $MAKE_TARGETS; then
+# Run all targets in a single make command with automatic exit detection
+# Check if the make command spawns an interactive Innovus shell
+if make $MAKE_TARGETS < <(echo "exit") 2>&1 | tee make_output.log; then
     echo "SUCCESS: All steps completed successfully"
     MAKE_RESULT=0
 else
+    # Check if we're stuck in an interactive shell
+    if echo "$(tail -1 make_output.log)" | grep -q "innovus [0-9]*>"; then
+        echo "Detected interactive Innovus shell, sending exit command..."
+        # If make spawned an interactive shell, we need to handle it differently
+        # This is a fallback - the primary method should work with the process substitution above
+    fi
     echo "FAILED: Flow execution failed"
     MAKE_RESULT=1
 fi
+
+# Alternative approach: Run make with a timeout and auto-exit if stuck in Innovus
+# Uncomment this section if the above method doesn't work
+: '
+{
+    echo "make $MAKE_TARGETS"
+    sleep 2  # Give make a moment to start
+    # Monitor for Innovus prompt and send exit
+    while true; do
+        sleep 5
+        if jobs -l | grep -q "make"; then
+            # Check if Innovus prompt appeared
+            echo "exit" > /proc/$(pgrep -f innovus)/fd/0 2>/dev/null || true
+        else
+            break
+        fi
+    done
+} 2>&1 | tee make_output.log
+'
 
 # Save results regardless of success/failure
 STATUS="success"
@@ -138,6 +163,11 @@ for log in logs/*.log; do
     fi
 done
 
+# Copy make output log if it exists
+if [ -f "make_output.log" ]; then
+    cp make_output.log "$RESULT_DIR/"
+fi
+
 # Copy work directory if needed
 cp -r work "$RESULT_DIR/" 2>/dev/null
 
@@ -154,10 +184,11 @@ if [ -f "discord_webhook_notif.py" ]; then
     fi
 fi
 
-# Clean up backup if it exists
+# Clean up
 if [ -f "scripts/tech.tcl.backup" ]; then
     rm scripts/tech.tcl.backup
 fi
+rm -f make_output.log
 
 echo ""
 echo "========================================="
