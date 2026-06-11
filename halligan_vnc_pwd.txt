@@ -2,3 +2,5 @@ pwd: ihateicd
 
 New 'vm-linux01:1 (rren02)' desktop is vm-linux01:1
 
+To kill vncserver:
+vncserver -kill vm-linux01:1
